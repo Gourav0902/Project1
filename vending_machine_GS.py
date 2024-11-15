@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
 
 # STUDENT version for Project 1.
-# TPRG2131 Fall 202x
-# Updated Phil J (Fall 202x)
-# 
+# TPRG2131 Fall 2024
+''' Updated Gouravjeet Singh (Fall 2024)
+# Student id- 100920691
+
+This program is strictly my own work. Any material
+beyond course learning materials that is taken from
+the Web or other sources is properly cited, giving.
+credit to the original author(s)
+
+'''
 # Louis Bertrand
-# Oct 4, 2021 - initial version
+# Oct 4,  2021 - initial version
 # Nov 17, 2022 - Updated for Fall 2022.
-# 
+# This program is strictly my own work. Any material
+# beyond course learning materials that is taken from
+# the Web or other sources is properly cited, giving.
+# credit to the original author(s)
 
 # PySimpleGUI recipes used:
 #
@@ -18,6 +28,7 @@
 # https://pysimplegui.readthedocs.io/en/latest/cookbook/#asynchronous-window-with-periodic-update
 
 import PySimpleGUI as sg
+from time import sleep
 
 
 # Hardware interface module
@@ -28,7 +39,9 @@ import PySimpleGUI as sg
 #Where am I?
 hardware_present = False
 try:
-    #*** define the pin you used
+    from gpiozero import Button, Servo
+    servo = Servo(21)# Define GPIO pin for Servo
+    key1 = Button (26)# Define GPIO pin for button 
     hardware_present = True
 except ModuleNotFoundError:
     print("Not on a Raspberry Pi or gpiozero not installed.")
@@ -50,14 +63,21 @@ def log(s):
 # For testing purposes, output is to stdout, also ensure use of Docstring, in class
 class VendingMachine(object):
     
-    PRODUCTS = {"suprise": ("SURPRISE", 5),
-
-                }
+    PRODUCTS = {
+        "Chips": ("Chips", 150),
+        "pop": ("pop", 130),
+        "chocolate": ("chocolate", 100),
+        "Kurkure": ("Kurkure", 120),
+        "Cookies": ("Cookies", 50)
+    }
 
     # List of coins: each tuple is ("VALUE", value in cents)
-    COINS = {"5": ("5", 5),
-
-            }
+    COINS = {
+        "\u00A25": ("5", 5),
+        "\u00A210": ("10", 10),
+        "\u00A225": ("25", 25),
+        "\u00241": ("1", 100),
+        "\u00242": ("2", 200)}
 
 
     def __init__(self):
@@ -147,7 +167,16 @@ class DeliverProductState(State):
         # Deliver the product and change state
         machine.change_due = machine.amount - machine.PRODUCTS[machine.event][1]
         machine.amount = 0
-        print("Buzz... Whir... Click...", machine.PRODUCTS[machine.event][0])
+         # Simulate hardware interaction or print product delivery
+        if hardware_present:
+            servo.min()
+            sleep(1)
+            servo.mid()
+            sleep(1)
+            servo.max()
+            sleep(1)
+        else:
+            print("Buzz... Whir... Click...", machine.PRODUCTS[machine.event][0])
         if machine.change_due > 0:
             machine.go_to_state('count_change')
         else:
@@ -159,12 +188,12 @@ class CountChangeState(State):
     def on_entry(self, machine):
         # Return the change due and change state
         print("Change due: $%0.2f" % (machine.change_due / 100))
-        log("Returning change: " + str(machine.change_due))
+        log("Returning change: " + "\u00A2" + str(machine.change_due))
     def update(self, machine):
         for coin_index in range(0, 5):
             #print("working with", machine.coin_values[coin_index])
             while machine.change_due >= machine.coin_values[coin_index]:
-                print("Returning %d" % machine.coin_values[coin_index])
+                print("Returning " + "\u00A2" + " %d"  % machine.coin_values[coin_index])
                 machine.change_due -= machine.coin_values[coin_index]
         if machine.change_due == 0:
             machine.go_to_state('waiting') # No more change due, done
@@ -173,12 +202,12 @@ class CountChangeState(State):
 # MAIN PROGRAM
 if __name__ == "__main__":
     #define the GUI
-    sg.theme('BluePurple')    # Keep things interesting for your users
+    sg.theme('Black2')    # Keep things interesting for your users
 
     coin_col = []
     coin_col.append([sg.Text("ENTER COINS", font=("Helvetica", 24))])
     for item in VendingMachine.COINS:
-        log(item)
+        
         button = sg.Button(item, font=("Helvetica", 18))
         row = [button]
         coin_col.append(row)
@@ -186,15 +215,14 @@ if __name__ == "__main__":
     select_col = []
     select_col.append([sg.Text("SELECT ITEM", font=("Helvetica", 24))])
     for item in VendingMachine.PRODUCTS:
-        log(item)
-        button = sg.Button(item, font=("Helvetica", 18))
+        
+        button = sg.Button(item,  font=("Helvetica", 18))
         row = [button]
         select_col.append(row)
 
     layout = [ [sg.Column(coin_col, vertical_alignment="TOP"),
-                     sg.VSeparator(),
-                     sg.Column(select_col, vertical_alignment="TOP")
-                    ] ]
+                sg.VSeparator(),
+                sg.Column(select_col, vertical_alignment="TOP")],]
     layout.append([sg.Button("RETURN", font=("Helvetica", 12))])
     window = sg.Window('Vending Machine', layout)
 
@@ -231,4 +259,5 @@ if __name__ == "__main__":
         vending.update()
 
     window.close()
-    print("Normal exit")
+    print("Good Bye")
+
